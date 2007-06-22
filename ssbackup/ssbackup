@@ -1,0 +1,208 @@
+#!/usr/bin/python
+#
+# (c) 2007 by M G Berberich
+#
+#
+
+# ssbackup --basedir=/system/backup --count 14 \
+#          --exclude=ex.file nfs://morgoth:/home forwiss
+
+import sys, os, subprocess, tempfile
+import optparse, re
+
+###########################################################################
+#
+# backup-routines
+#
+
+#
+# call a command and raise a backup-exception if it fails
+#
+def callcommand(args):
+    try:
+        r = subprocess.call(args)
+        return r
+    except OSError, data:
+        raise "backup", ("call", (args[0], data[1]))
+     
+#
+# do rsync-logic
+#
+def do_backup(source, name, count, exclude, verbose):
+    # do the rsync, make hardlinktree if possible
+    if exclude:
+        r = callcommand(["/usr/bin/rsync",  "--archive", "--delete", "--acls", 
+                         "--delete-excluded", "--exclude-from=%s" % exclude,
+                         "--link-dest=../%s.0/" % name, "%s/" % source, name])
+    else:
+        r = callcommand(["/usr/bin/rsync",  "--archive", "--delete", "--acls", 
+                         "--link-dest=../%s.0/" % name, "%s/" % source, name])
+
+    if r != 0:
+        raise "backup", ("rsync", r)
+
+    # remove oldest version
+    if os.path.exists("%s.%d" % (name, count)):
+        r = callcommand(["/bin/rm",  "--recursive", "--force", 
+                         "%s.%d" % (name, count)])
+        if r != 0:
+            raise "backup", ("rm", r)
+        
+    # shift old versions
+    for i in range(count - 1, -1, -1):
+        if os.path.exists("%s.%d" % (name, i)):
+            os.rename("%s.%d" % (name, i), "%s.%d" % (name, i+1))
+            
+    # rename new backup to .0
+    os.rename(name, "%s.0" % name)
+
+    # touch directory to have a timestamp
+    os.utime("%s.0" % name, None)
+
+#
+# split source-'url' into type and path
+#
+def split_url(url):
+    g = re.match("([a-zA-Z]+)://(.+)", url)
+    if not g:
+        raise "backup", ("noturl")
+    (type, path) = g.groups()
+    if type != "file" and type != "nfs":
+        raise "backup", ("wrongtype", type)
+    return ((type, path))
+  
+#
+# do the backup
+#
+def backup(source, name, dir, count, exclude, checkonly, verbose):
+    (type, path) = split_url(source)
+    if verbose:
+        print "backup: type=%s, path=%s, name=%s, dir=%s, count=%d" % \
+        (type, path, name, dir, count)
+
+    try:
+        os.chdir(dir)
+    except OSError:
+        raise "backup", ("nodir", dir)
+
+    if checkonly:
+        print_plan(source, name, dir, count, exclude)
+        return
+
+    if type == "file":
+        do_backup(path, name, count, exclude, verbose)
+    elif type == "nfs":
+        mountpoint = tempfile.mkdtemp("","ssbackup-%s-" % name)
+
+        r = 0
+        r = callcommand(["/bin/mount", "-t", "nfs", "-o", "ro", 
+                         path, mountpoint])
+        if r != 0:
+            raise "backup", ("mount", path)
+
+        try:
+            do_backup(mountpoint, name, count, exclude, verbose)
+        finally:
+            r = callcommand(["/bin/umount",  mountpoint])
+            if r != 0:
+                raise "backup", ("umount", mountpoint)
+            os.rmdir(mountpoint)
+    else:
+        raise "backup", ("type", source)
+
+###########################################################################
+#
+# command-interface
+#
+
+#
+# report error
+#
+def backup_error(s):
+    print >> sys.stderr, "error: %s" % s
+    sys.exit(1)
+
+#
+# call backup and catch exceptions
+#
+def call_backup(source, name, dir, count, exclude, checkonly, verbose):
+    try:
+        backup(source, name, dir, count, exclude, checkonly, verbose)
+
+    except "backup", data:
+        if data[0] == "mount":
+            backup_error("%s of %s failed" % data)
+        elif data[0] == "umount":
+            backup_error("%s of %s failed" % data)
+        elif data[0] == "type":
+            backup_error("%s of %s is not known" % data)
+        elif data[0] == "call":
+            backup_error("calling '%s' failed: %s" % data[1])
+        elif data[0] == "rsync":
+            backup_error("calling '%s' failed with code %s" % data)
+        elif data[0] == "rsync":
+            backup_error("calling '%s' failed with code %s" % data)
+        elif data[0] == "noturl":
+            backup_error("%s is not a valid source" % data[1])
+        elif data[0] == "wrongtype":
+            backup_error("%s is not a valid type" % data[1])
+        elif data[0] == "nodir":
+            backup_error("chdir to directory '%s' failed" % data[1])
+        else:
+            backup_error("unknown error", data)
+
+    except OSError, data:
+        backup_error("System-error:", data[1])
+
+#
+# print a backup-plan-description
+#
+def print_plan(source, dest, dir, count, exclude):
+    type, path = split_url(source)
+    print "backing up", source
+    print "    to %s/%s.*" % (dir, dest)
+    if exclude:
+        print "    using exclude-file %s" % exclude
+    print "    holding %d versions" % count
+
+###########################################################################
+#
+# Main-Programm
+#
+description = """\
+This tool makes snapshot-style backups
+It can be used as a simple command with options or can parse a config-file
+"""
+
+usage = """usage: %prog [options] from to
+       %prog [config-options] 
+"""
+
+optparse = optparse.OptionParser(version = "1.1", 
+                                 usage = usage, 
+                                 description = description)
+optparse.add_option("-v", "--verbose", action = "store_true",
+                    dest = "verbose", default = False,
+                    help="verbose output ")
+optparse.add_option("-d", "--basedir", type="string", 
+                 dest = "basedir", default = ".",
+                 help="Directory that holds the backups. "
+                 "default is the current directory")
+
+optparse.add_option("-e", "--exclude", type="string", 
+                 dest = "exclude", default = None,
+                 help="file with rsync-exclude patterns ")
+
+optparse.add_option("-n", "--count", type="int", dest = "count", default = 14,
+                 help="Number of backup-snapshots that are held")
+
+optparse.add_option("-o", "--check-only", action = "store_true",
+                 dest = "checkonly", default = False,
+                 help="do nothing, only say what would have been done")
+options, args = optparse.parse_args()
+
+if len(args) == 2:
+    call_backup(args[0], args[1], options.basedir, options.count, 
+                options.exclude, options.checkonly, options.verbose)
+else:
+    optparse.error("wrong number of arguments");
