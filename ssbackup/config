@@ -1,0 +1,17 @@
+basedir = /scratch
+count = 24
+
+# FORWISS
+backup forwiss
+       source = nfs://morgoth:/export/home/forwiss 
+       exclude = /etc/ssbackup/exclude.forwiss
+
+# Mail
+backup mail 
+       source = nfs://morgoth:/export/home/mail
+
+# Temporary
+backup temp 
+       source = file:///tmp/XX
+       basedir = /tmp
+       count =  23
