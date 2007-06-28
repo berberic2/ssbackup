@@ -107,7 +107,7 @@ def backup(source, name, dir, count, exclude, checkonly, verbose):
             raise "backup", ("noabspath", path)
         do_backup(path, name, count, exclude, verbose)
     elif type == "nfs":
-        mountpoint = tempfile.mkdtemp("","ssbackup-%s-" % name)
+        mountpoint = tempfile.mkdtemp("","%s/ssbackup-mount-%s-" % (dir, name))
 
         r = callcommand(["/bin/mount", "-t", "nfs", "-o", "ro",
                          path, mountpoint])
