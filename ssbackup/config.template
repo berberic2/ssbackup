@@ -1,0 +1,20 @@
+#
+# configuration-file for ssbackup-batch
+#
+#
+# Lines starting with '#' are comment
+# global options are basedir and count
+#
+#   basedir = /backup
+#   count = 24
+#
+# an instance looks like this 
+#
+#   backup home
+#         source = nfs://server:/home
+#         exclude = /etc/ssbackup/exclude.home
+#         count = 34
+# 
+# instance-options are source, exclude, count and basedir
+# where source is mandatory. Please read the documentation
+#
