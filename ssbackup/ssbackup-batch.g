@@ -158,6 +158,8 @@ if len(args) == 1:
             backup_error("config-file '%s' is empty" % config_file)
     
         for i in plan:
+            if not i["source"]:
+                backup_error("source is mandatory for an instance!")
             command = [ "ssbackup" ]
 
             if options.checkonly:
