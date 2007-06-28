@@ -85,6 +85,7 @@ parser config:
 			| basedir {{ v[basedir[0]] = basedir[1] }}
 			| recipe {{ plan.append(vmerge(v, recipe)) }} 
 			)+ END {{ return plan }}
+                        | END {{ return plan }}
 %%
 ###########################################################################
 #
@@ -145,11 +146,16 @@ optparse.add_option("-o", "--check-only", action = "store_true",
 options, args = optparse.parse_args()
 
 if len(args) == 1:
-    if os.access(args[0], os.R_OK):
-        text = open(args[0], "r").read() + '\n'
+    config_file = args[0]
+    if not os.access(config_file, os.R_OK):
+        backup_error("config-file '%s' not found" % config_file)
+    else:
+        text = open(config_file, "r").read() + '\n'
         plan = parseX("config", text)
-        if not plan:
-            backup_error("Parsing config-file failed")
+        if plan == None:
+            backup_error("Parsing config-file '%s' failed" % config_file)
+        elif plan == []:
+            backup_error("config-file '%s' is empty" % config_file)
     
         for i in plan:
             command = [ "ssbackup" ]
@@ -169,7 +175,13 @@ if len(args) == 1:
             command.append(i["source"])
             command.append(i["name"])
 
-            callcommand(command)
+            if options.plan:
+                print command[0]
+                for j in command[1:]:
+                    print "    %s" % j
+                print
+            else:
+                callcommand(command)
 else:
     optparse.error("wrong number of arguments");
 
