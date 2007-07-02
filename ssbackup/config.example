@@ -1,0 +1,41 @@
+#
+# ssbackup-batch example config-file
+#
+# first set basedir and config globaly. Both can be overwriten on a
+# per-instance base.
+# here we set basedir to /backups, so all the backups are going into /backup
+# and count to 24, so we get 24 versions. If the ssbackup-batch is run
+# once a day/night we get 24-days of backup
+
+basedir = /backups
+count = 24
+
+# backup home which is mounted via nfs from server morgoth
+# from /home/internals.
+# backups are going into /backups/home.0, /backups/home.1, ...
+
+# Home
+backup home
+       source = nfs://morgoth:/home/internals
+
+# backup mail which is mounted via nfs from server morgoth
+# from /var/mail.
+# backups are going into /backups/mail.0, /backups/mail.1, ...
+# the file /etc/ssbackup/exclude.mail is given to rsync
+# with --exclude=/etc/ssbackup/exclude.mail
+# please read the rsync-documentation
+
+# Mail
+backup mail 
+       source = nfs://morgoth:/var/mail
+       exclude = /etc/ssbackup/exclude.mail
+
+# backup /scratch with is on this machine.
+# backups are going into /tmp/data.0 /tmp/data.1, ...
+# we only hold 23 versions 
+
+# Temporary
+backup data
+       source = file:///scratch/
+       basedir = /tmp
+       count =  23

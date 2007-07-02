@@ -1,0 +1,12 @@
+Source: ssbackup
+Section: unknown
+Priority: extra
+Maintainer: M G Berberich <berberic@invalid>
+Build-Depends: debhelper (>= 5)
+Standards-Version: 3.7.2
+
+Package: ssbackup
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: automated snapshot-style backups
+ 

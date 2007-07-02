@@ -1,0 +1,139 @@
+.\"
+.TH ssbackup 8 "July 02, 2007" 
+
+.SH NAME
+ssbackup \- a tool for making snapshot-style backups using rsync
+
+.SH SYNOPSIS
+.B ssbackup
+.RI [ options ]
+source name
+.br
+
+.SH DESCRIPTION
+This manual page explains the
+.B ssbackup
+tool. This tool is an implementation of the snapshot-style-backup
+method that is described in
+.IB http://www.mikerubel.org/computers/rsync_snapshots/.
+
+It makes a backup every time it is called, holding a specified number
+of backups, so you can go back to older versions. Instead of making a
+full copy every time, it hard-links files that have not changed since
+the last run, so normaly using only a fraction of the space.  Every
+snapshot looks like a full copy
+
+To be honest the actual work is done by rsync(1), this tool only is a
+small script to call rsync.
+
+.I source
+is a URL-like specifier for the source (the directory to back-up). It
+is either
+.RS
+.sp 
+.I file://[absolut-path]
+.sp
+.RE
+for backing-up a localy directory-tree or 
+.RS
+.sp
+.I nfs://[server]:[path-on-server]
+.sp
+.RE
+for backing up a nfs-mountable export of a remote server. 
+.B ssbackup 
+will mount this export, do the backup and umount it.
+
+.I name
+is the name of the backups. The backups are called 
+.I name.0, name.1, etc.
+
+.SH OPTIONS
+.TP
+.B --version
+shows the version-number of 
+.B ssbackup
+and exits
+.TP
+.B -h, --help
+shows a short help explaining the options
+.TP
+.B -d BASEDIR, --basedir=BASEDIR
+Directory that holds the backups. The default is the current
+directory. In this directory backups with name 
+.I name.[0-9]*
+will be created that hold the versiones of the backup.
+.TP
+.B -e EXCLUDE, --exclude=EXCLUDE
+file with rsync-exclude patterns. Please see rsync(1).
+.TP
+.B -n COUNT, --count=COUNT
+The number of backup-snapshots that are held. Defaults to 14 if not given.
+.TP
+.B -o, --check-only
+Do nothing, only say what would have been called.
+
+.SH EXAMPLES
+.RS
+.sp
+ssbackup home nfs://milkyway:/export/1
+.sp
+.RE
+makes a backup of 
+.I /export/1
+exported by nfs-server
+.I milkyway
+into the current directory. The backups are called 
+.I home.0, home.1, home.2,...
+As count is not specified 14 versions (
+.I home.0,.., home.14
+) are hold.
+
+.RS
+.sp
+ssbackup --basedir=/backup --exclude=home.excl home nfs://milkyway:/export/1
+.sp
+.RE
+the same as above, but the backups are put into 
+.I /backup
+instead of the currend directory and 
+.I home.excl
+is passed to rsync as an exclude file with 
+.I --exclude-from=home.excl.
+
+.SH SECURITY
+.B ssbackup 
+can easily destroy valuable data if called with wrong parameters,
+especially if called as root. So think twice bevor calling it.
+
+.SH BUGS
+There are probably bugs in
+.B ssbackup.
+It has not been testet widely and is in a \*(lqworks for me\*(rq-state. It is
+provided \*(lqas is\*(rq and there is no warranty for this software.
+
+.SH LICENSE
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or (at
+your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+.B WITHOUT ANY WARRANTY; 
+without even the implied warranty of
+.B MERCHANTABILITY 
+or 
+.B FITNESS FOR A PARTICULAR PURPOSE.  
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+02110-1301 U SA
+
+.SH AUTHOR
+M G Berberich <berberic@forwiss.uni-passau.de>
+
+.SH SEE ALSO
+nfs(5), python(1), rsync(1), ssbackup-batch(8)
+

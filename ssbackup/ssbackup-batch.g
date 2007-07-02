@@ -1,7 +1,23 @@
 #!/usr/bin/python
 #
-# (c) 2007 by M G Berberich
+# ssbackup-batch - a tool for calling ssbackup
 #
+# Copyright (C) 2007 M G Berberich
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301 USA.
 #
 
 import os, optparse, subprocess
@@ -160,7 +176,7 @@ if len(args) == 1:
         for i in plan:
             if not i["source"]:
                 backup_error("source is mandatory for an instance!")
-            command = [ "ssbackup" ]
+            command = [ "/usr/sbin/ssbackup" ]
 
             if options.checkonly:
                 command.append("--check-only")

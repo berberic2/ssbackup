@@ -1,0 +1,6 @@
+ssbackup (1.0-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- M G Berberich <berberic@invalid>  Thu, 28 Jun 2007 22:25:48 +0200
+

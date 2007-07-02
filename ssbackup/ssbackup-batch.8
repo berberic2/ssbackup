@@ -1,0 +1,168 @@
+.\"
+.TH ssbackup-batch 8 "July 02, 2007" 
+
+.SH NAME
+ssbackup-batch \- a tool for calling ssbackup
+
+.SH SYNOPSIS
+.B ssbackup-batch
+.RI [ options ]
+config-file
+.br
+
+.SH DESCRIPTION
+This manual page explains the
+.B ssbackup-batch
+tool. This tool is a frontend to 
+.B ssbackup(8), 
+an implementation of the
+snapshot-style-backup method that is described in
+.IB http://www.mikerubel.org/computers/rsync_snapshots/.
+.P
+.I config-file
+is a configuration file that contains rules for making backups
+
+Typically config-files (and exclude-files) are put into 
+.I /etc/ssbackup/.
+and 
+.B ssbackup-batch
+is executed daily by a crontab-entry like:
+.sp
+.RS
+.nf
+12 4 * * * /usr/sbin/ssbackup-batch /etc/ssbackup/config
+.fi
+.RE
+
+.SH OPTIONS
+.TP
+.B --version
+shows the version-number of 
+.B ssbackup-batch
+and exits
+.TP
+.B -h, --help
+shows a short help explaining the options
+.TP
+.B -v --print-plan
+Print only a plan what would have been done, but do nothing at all.
+.TP
+.B -o, --check-only
+pass the 
+.B --check-only 
+flag to 
+.B ssbackup.
+(please there there)
+
+.SH USAGE
+A config file describes one or more recipes for backups. To understand
+the nomenclature please see ssbackup(8).
+.P
+Lines starting with
+.I #
+are comments and have no effect as do empty lines.
+.P
+lines starting with
+.P
+.I basedir =
+.P
+or
+.P
+.I count =
+.P
+specifiy these values globaly. They have effect for all following
+recipes.
+.P
+a backup-recipe consists of a line starting with
+.I backup name
+followed by indented lines. All indented lines belong to this recipe
+only and have no global effect. 
+.I name 
+is the name of the backups.
+Indented lines can be:
+.P
+.TP
+.I "source = "
+specifies the source to back-up. There 
+.B must 
+be a source in a recipe
+.TP
+.I "basedir = "
+specifies the basedir, where the backups go. If given in a recipe as
+indented line it overwrites a global basedir temporarily.
+.TP
+.I "count = "
+specifies the count (number of versions). If given in a recipe as
+indented line it overwrites a global count temporarily.
+.TP
+.I "exclude = " 
+specifies the exclude-file for rsync.
+.P
+In a recipe everey kind of indented line can occur one time. If a
+indented line is given more than once the last one wins. It is not
+possible to give p.e. several exclude-files.
+
+.SH EXAMPLES
+Example for a config-file.
+.P
+.RS
+.nf
+basedir = /backup
+count = 24
+
+# Home Directory
+backup home
+       source = nfs://milkyway:/export/home/1 
+       exclude = /etc/ssbackup/home.exclude
+
+# Mail
+backup mail 
+       source = nfs://milkyway:/export/var/mail
+
+# Temporary
+backup data
+       source = file:///scratch/project-data
+       basedir = /data-backup
+       count =  12
+.fi
+.RE
+
+.SH SECURITY
+.B ssbackup 
+can easily destroy valuable data if called with wrong parameters,
+especially if called as root. So think twice bevor calling it,
+especially if you do it automatically via 
+.B ssbackup-batch.
+
+.SH BUGS
+There are probably bugs in
+.B ssbackup-batch
+It has not been testet widely and is in a \*(lqworks for
+me\*(rq-state. It is provided \*(lqas is\*(rq and there is no warranty
+for this software.
+
+.SH LICENSE
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or (at
+your option) any later version.
+.P
+This program is distributed in the hope that it will be useful, but
+.B WITHOUT ANY WARRANTY; 
+without even the implied warranty of
+.B MERCHANTABILITY 
+or 
+.B FITNESS FOR A PARTICULAR PURPOSE.  
+See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+02110-1301 U SA
+
+.SH AUTHOR
+M G Berberich <berberic@forwiss.uni-passau.de>
+
+.SH SEE ALSO
+python(1), ssbackup(8)
+

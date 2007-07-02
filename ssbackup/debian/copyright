@@ -1,0 +1,19 @@
+This package was debianized by M G Berberich <berberic@invalid> on
+Thu, 28 Jun 2007 22:25:48 +0200.
+
+Upstream Author:  M G Berberich <berberic@forwiss.uni-passau.de>
+
+Copyright: (C) 2007, M G Berberich <berberic@forwiss.uni-passau.de>
+
+License: GPL V2 see 
+
+  /usr/share/common-licenses/GPL
+
+on Debian systems, or at
+
+  http://www.fsf.org/licenses/gpl.htm
+
+The Debian packaging is (C) 2007, M G Berberich
+<berberic@forwiss.uni-passau.de> and is licensed under the GPL, see
+`/usr/share/common-licenses/GPL'.
+
