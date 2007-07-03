@@ -53,11 +53,11 @@ def rename(a, b):
 def do_backup(source, name, count, exclude, verbose):
     # do the rsync, make hardlinktree if possible
     if exclude:
-        commandstr = ["/usr/bin/rsync",  "--archive", "--delete", "--acls",
-                      "--delete-excluded", "--exclude-from=%s" % exclude,
+        commandstr = ["/usr/bin/rsync",  "--archive", "--acls",
+                      "--exclude-from=%s" % exclude,
                       "--link-dest=../%s.0/" % name, "%s/" % source, name]
     else:
-        commandstr = ["/usr/bin/rsync",  "--archive", "--delete", "--acls",
+        commandstr = ["/usr/bin/rsync",  "--archive", "--acls",
                       "--link-dest=../%s.0/" % name, "%s/" % source, name]
 
     r = callcommand(commandstr)
@@ -206,7 +206,7 @@ usage = """usage: %prog [options] source name
 
 source is file://[absolut-path] or nfs://[server]:[path]"""
 
-optparse = optparse.OptionParser(version = "0.9",
+optparse = optparse.OptionParser(version = "1.0",
                                  usage = usage,
                                  description = description)
 optparse.add_option("-v", "--verbose", action = "store_true",

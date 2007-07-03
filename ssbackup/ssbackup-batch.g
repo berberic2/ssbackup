@@ -148,7 +148,7 @@ calls '/usr/sbin/ssbackup' for every recipe"""
 
 usage = """usage: %prog [config-file]"""
 
-optparse = optparse.OptionParser(version = "0.9",
+optparse = optparse.OptionParser(version = "1.0",
                                  usage = usage,
                                  description = description)
 
