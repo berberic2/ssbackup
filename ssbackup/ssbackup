@@ -28,6 +28,8 @@ import optparse, re
 # backup-routines
 #
 
+class backup_error(Exception): pass
+
 #
 # call a command and raise a backup-exception if it fails
 #
@@ -35,8 +37,8 @@ def callcommand(args):
     try:
         r = subprocess.call(args)
         return r
-    except OSError, data:
-        raise "backup", ("call", (args[0], data[1]))
+    except OSError as data:
+        raise backup_error("call", (args[0], data[1]))
 
 #
 #
@@ -44,8 +46,8 @@ def callcommand(args):
 def rename(a, b):
     try:
         os.rename(a, b)
-    except OSError, data:
-        "backup", ("mv", (a, b, data[1]))
+    except OSError as data:
+        raise backup_error("mv", (a, b, data[1]))
 
 #
 # do rsync-logic
@@ -65,14 +67,14 @@ def do_backup(source, name, count, exclude, verbose):
     #  0: O.K.
     # 24: Partial transfer due to vanished source files
     if r not in (0, 24):
-        raise "backup", ("rsync", r)
+        raise backup_error("rsync", r)
 
     # remove oldest version
     if os.path.exists("%s.%d" % (name, count)):
         r = callcommand(["/bin/rm",  "--recursive", "--force",
                          "%s.%d" % (name, count)])
         if r != 0:
-            raise "backup", ("rm", ("%s.%d" % (name, count), r))
+            raise backup_error("rm", ("%s.%d" % (name, count), r))
 
     # shift old versions
     for i in range(count - 1, -1, -1):
@@ -91,10 +93,10 @@ def do_backup(source, name, count, exclude, verbose):
 def split_url(url):
     g = re.match("([a-zA-Z]+)://(.+)", url)
     if not g:
-        raise "backup", ("noturl", url)
+        raise backup_error("noturl", url)
     (type, path) = g.groups()
     if type != "file" and type != "nfs":
-        raise "backup", ("wrongtype", type)
+        raise backup_error("wrongtype", type)
     return ((type, path))
 
 #
@@ -108,8 +110,8 @@ def backup(source, name, dir, count, exclude, checkonly, verbose):
 
     try:
         os.chdir(dir)
-    except OSError:
-        raise "backup", ("nodir", dir)
+    except OSError as data:
+        raise backup_error("nodir", (dir, data[1]))
 
     if checkonly:
         print_plan(source, name, dir, count, exclude)
@@ -117,7 +119,7 @@ def backup(source, name, dir, count, exclude, checkonly, verbose):
 
     if type == "file":
         if path[0] != '/':
-            raise "backup", ("noabspath", path)
+            raise backup_error("noabspath", path)
         do_backup(path, name, count, exclude, verbose)
     elif type == "nfs":
         mountpoint = tempfile.mkdtemp("","%s/ssbackup-mount-%s-" % (dir, name))
@@ -125,17 +127,17 @@ def backup(source, name, dir, count, exclude, checkonly, verbose):
         r = callcommand(["/bin/mount", "-t", "nfs", "-o", "ro",
                          path, mountpoint])
         if r != 0:
-            raise "backup", ("mount", path)
+            raise backup_error("mount", path)
 
         try:
             do_backup(mountpoint, name, count, exclude, verbose)
         finally:
             r = callcommand(["/bin/umount",  mountpoint])
             if r != 0:
-                raise "backup", ("umount", mountpoint)
+                raise backup_error("umount", mountpoint)
             os.rmdir(mountpoint)
     else:
-        raise "backup", ("type", source)
+        raise backup_error("type", source)
 
 ###########################################################################
 #
@@ -145,8 +147,8 @@ def backup(source, name, dir, count, exclude, checkonly, verbose):
 #
 # report error
 #
-def backup_error(s):
-    print >> sys.stderr, "error: %s" % s
+def print_error(s):
+    print >> sys.stderr, "ssbackup error: %s" % s
     sys.exit(1)
 
 #
@@ -156,34 +158,34 @@ def call_backup(source, name, dir, count, exclude, checkonly, verbose):
     try:
         backup(source, name, dir, count, exclude, checkonly, verbose)
 
-    except "backup", data:
+    except backup_error as data:
         if data[0] == "mount":
-            backup_error("%s of %s failed" % data)
+            print_error("mount of %s failed" % data[1])
         elif data[0] == "umount":
-            backup_error("%s of %s failed" % data)
+            print_error("unmount of %s failed" % data[1])
         elif data[0] == "type":
-            backup_error("%s of %s is not known" % data)
+            print_error("type of %s is not known" % data[1])
         elif data[0] == "call":
-            backup_error("calling '%s' failed widh %s" % data)
+            print_error("calling '%s' failed with %s" % data[1])
         elif data[0] == "rsync":
-            backup_error("%s failed with code %s" % data)
+            print_error("rsync failed with code %s" % data[1])
         elif data[0] == "mv":
-            backup_error("renaming '%s' to '%s' failed with %s" % data)
+            print_error("renaming '%s' to '%s' failed with %s" % data[1])
         elif data[0] == "rm":
-            backup_error("removing '%s' failed with %s" % data)
+            print_error("removing '%s' failed with %s" % data[1])
         elif data[0] == "noturl":
-            backup_error("%s is not a valid source" % data[1])
+            print_error("%s is not a valid source" % data[1])
         elif data[0] == "wrongtype":
-            backup_error("%s is not a valid type" % data[1])
+            print_error("%s is not a valid type" % data[1])
         elif data[0] == "nodir":
-            backup_error("change to directory '%s' failed" % data[1])
+            print_error("change to directory '%s' failed with: %s" % data[1])
         elif data[0] == "noabspath":
-            backup_error("'%s' is not a absolut path" % data[1])
+            print_error("'%s' is not a absolut path" % data[1])
         else:
-            backup_error("unknown error: %s" % data)
+            print_error("unknown error: %s" % data)
 
-    except OSError, data:
-        backup_error("System-error:", data[1])
+    except OSError as data:
+        print_error("System-error:", data[1])
 
 #
 # print a backup-plan-description
@@ -231,7 +233,7 @@ options, args = optparse.parse_args()
 
 if len(args) == 2:
     if not len(args[1]):
-        backup_error("name must not be an empty string")
+        print_error("name must not be an empty string")
 
     call_backup(args[0], args[1], options.basedir, options.count,
                 options.exclude, options.checkonly, options.verbose)

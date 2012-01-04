@@ -2,7 +2,7 @@ Source: ssbackup
 Section: unknown
 Priority: extra
 Maintainer: M G Berberich <berberic@invalid>
-Build-Depends: debhelper (>= 5)
+Build-Depends: debhelper (>= 5), yapps2
 Standards-Version: 3.7.2
 
 Package: ssbackup

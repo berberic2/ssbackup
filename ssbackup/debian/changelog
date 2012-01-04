@@ -1,3 +1,9 @@
+ssbackup (1.1-1) unstable; urgency=low
+
+  * changed exceptions for python 2.6 up
+
+ -- M G Berberich <berberic@fmi.uni-passau.de>  Wed, 04 Jan 2012 12:27:45 +0100
+
 ssbackup (1.0-1) unstable; urgency=low
 
   * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>

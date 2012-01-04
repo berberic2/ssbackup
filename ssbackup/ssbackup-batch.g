@@ -40,7 +40,7 @@ def parseX(rule, text):
     P = config(configScanner(text))
     try:
         return P.config(text)
-    except runtime.SyntaxError, e:
+    except runtime.SyntaxError as e:
         print >>sys.stderr, "Syntax-Error in Line %d" % e.pos[1]
         e.context.scanner.print_line_with_pointer(e.pos)
     except runtime.NoMoreTokens:
@@ -122,8 +122,8 @@ def callcommand(args):
     try:
         r = subprocess.call(args)
         return r
-    except OSError, data:
-         backup_error("calling 'ssbackup' failed")
+    except OSError as data:
+         backup_error("calling 'ssbackup' failed with: %s", data[1])
         
 
 #
