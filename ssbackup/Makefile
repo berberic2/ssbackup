@@ -3,6 +3,10 @@ BINDIR = $(DESTDIR)/usr/sbin
 CONFIGDIR = $(DESTDIR)/etc/ssbackup
 MANDIR = $(DESTDIR)/usr/share/man/man8/
 
+all: ssbackup-batch
+
+doc:  ssbackup.8.html ssbackup-batch.8.html
+
 ssbackup-batch: ssbackup-batch.g
 	yapps $^ $@
 	chmod +x $@
@@ -17,3 +21,7 @@ install: ssbackup-batch
 
 clean:
 	rm ssbackup-batch
+
+%.8.html : %.8
+	rman -f HTML -r "" ./$< > $@
+#	man -t -Thtml ./$< > $@

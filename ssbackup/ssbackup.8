@@ -1,21 +1,21 @@
 .\"
-.TH ssbackup 8 "July 02, 2007" 
+.TH ssbackup 8 "July 02, 2007" Linux "User Manuals"
 
 .SH NAME
 ssbackup \- a tool for making snapshot-style backups using rsync
 
 .SH SYNOPSIS
-.B ssbackup
-.RI [ options ]
-source name
+.B ssbackup [
+.I options 
+.B ] 
+.I source name
 .br
 
 .SH DESCRIPTION
 This manual page explains the
 .B ssbackup
 tool. This tool is an implementation of the snapshot-style-backup
-method that is described in
-.IB http://www.mikerubel.org/computers/rsync_snapshots/.
+method that is described in http://www.mikerubel.org/computers/rsync_snapshots/.
 
 It makes a backup every time it is called, holding a specified number
 of backups, so you can go back to older versions. Instead of making a
@@ -23,8 +23,9 @@ full copy every time, it hard-links files that have not changed since
 the last run, so normaly using only a fraction of the space.  Every
 snapshot looks like a full copy
 
-To be honest the actual work is done by rsync(1), this tool only is a
-small script to call rsync.
+To be honest the actual work is done by 
+.B rsync(1), 
+this tool only is a small script to call rsync.
 
 .I source
 is a URL-like specifier for the source (the directory to back-up). It
@@ -46,31 +47,27 @@ will mount this export, do the backup and umount it.
 
 .I name
 is the name of the backups. The backups are called 
-.I name.0, name.1, etc.
+.I name.0, name.1, 
+etc.
 
 .SH OPTIONS
-.TP
-.B --version
+.IP --version
 shows the version-number of 
 .B ssbackup
 and exits
-.TP
-.B -h, --help
+.IP "-h, --help"
 shows a short help explaining the options
-.TP
-.B -d BASEDIR, --basedir=BASEDIR
+.IP "-d BASEDIR, --basedir=BASEDIR"
 Directory that holds the backups. The default is the current
 directory. In this directory backups with name 
 .I name.[0-9]*
 will be created that hold the versiones of the backup.
-.TP
-.B -e EXCLUDE, --exclude=EXCLUDE
-file with rsync-exclude patterns. Please see rsync(1).
-.TP
-.B -n COUNT, --count=COUNT
+.IP "-e EXCLUDE, --exclude=EXCLUDE"
+file with rsync-exclude patterns. Please see 
+.B rsync(1).
+.IP "-n COUNT, --count=COUNT"
 The number of backup-snapshots that are held. Defaults to 14 if not given.
-.TP
-.B -o, --check-only
+.IP "-o, --check-only"
 Do nothing, only say what would have been called.
 
 .SH EXAMPLES

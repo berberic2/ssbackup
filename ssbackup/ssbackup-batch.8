@@ -33,6 +33,17 @@ is executed daily by a crontab-entry like:
 12 4 * * * /usr/sbin/ssbackup-batch /etc/ssbackup/config
 .fi
 .RE
+.sp
+or by a script in /etc/cron.daily/ like:
+.sp
+.RS
+.nf
+#!/bin/sh
+/usr/sbin/ssbackup-batch /etc/ssbackup/config
+.fi
+.RE
+.sp
+which also works with anacron.
 
 .SH OPTIONS
 .TP
@@ -164,5 +175,5 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 M G Berberich <berberic@forwiss.uni-passau.de>
 
 .SH SEE ALSO
-python(1), ssbackup(8)
+anacron(8), cron(8), crontab(1), python(1), ssbackup(8)
 
