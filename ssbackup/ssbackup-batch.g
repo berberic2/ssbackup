@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # ssbackup-batch - a tool for calling ssbackup
 #
@@ -23,15 +23,15 @@
 import os, optparse, subprocess
 
 def vmerge(a, b):
-    r = {}
+    r = { }
     r.update(a)
     r.update(b)
     return r
 
 def init_plan():
-    return ({ 'source': None, 
-              'name': None, 
-              'basedir': None, 
+    return ({ 'source': None,
+              'name': None,
+              'basedir': None,
               'count': None,
               'exclude': None
               }, [] )
@@ -41,11 +41,11 @@ def parseX(rule, text):
     try:
         return P.config(text)
     except runtime.SyntaxError as e:
-        print >>sys.stderr, "Syntax-Error in Line %d" % e.pos[1]
+        print("Syntax-Error in Line %d" % e.pos[1], file=sys.stderr)
         e.context.scanner.print_line_with_pointer(e.pos)
     except runtime.NoMoreTokens:
-        print >>sys.stderr, 'Could not complete parsing; stopped around here:'
-        print >>sys.stderr, parser._scanner
+        print('Could not complete parsing; stopped around here:', file=sys.stderr)
+        print(parser._scanner, file=sys.stderr)
 
 
 %%
@@ -60,47 +60,47 @@ parser config:
        token COUNT:	'count'
        token PATH:	'[^\n ]+'
 
-       rule empty:	EOL
+       rule empty:      EOL
 
-       rule basedir:	'basedir' SPACE* '=' SPACE*
-                    	PATH 	{{ v = ("basedir", PATH) }} 
-			SPACE* EOL {{ return v }}
+       rule basedir:    'basedir' SPACE* '=' SPACE*
+                        PATH    {{ v = ("basedir", PATH) }}
+                        SPACE* EOL {{ return v }}
 
-       rule count:	'count' SPACE* '=' SPACE*
-                    	NUM 	{{ v = ("count", int(NUM)) }} 
-			SPACE* EOL {{ return v }} 
+       rule count:      'count' SPACE* '=' SPACE*
+                        NUM     {{ v = ("count", int(NUM)) }}
+                        SPACE* EOL {{ return v }}
 
-       rule recipe:	"backup" SPACE* 
-                    	NAME 	     {{ v = {"name" : NAME} }} 
-			SPACE* EOL
-			( ibasedir   {{ v[ibasedir[0]] = ibasedir[1] }} 
-			| isource    {{ v[isource[0]]  = isource[1] }} 
-			| iexclude   {{ v[iexclude[0]] = iexclude[1] }} 
-			| icount     {{ v[icount[0]]   = icount[1] }} 
-			)+ {{ return v }}
+       rule recipe:     "backup" SPACE*
+                        NAME         {{ v = {"name" : NAME} }}
+                        SPACE* EOL
+                        ( ibasedir   {{ v[ibasedir[0]] = ibasedir[1] }}
+                        | isource    {{ v[isource[0]]  = isource[1] }}
+                        | iexclude   {{ v[iexclude[0]] = iexclude[1] }}
+                        | icount     {{ v[icount[0]]   = icount[1] }}
+                        )+ {{ return v }}
 
-       rule ibasedir:	'[ \t]+basedir' SPACE* '=' SPACE*
-                    	PATH 		{{ v = ("basedir", PATH) }} 
-			SPACE* EOL 	{{ return v }} 
+       rule ibasedir:   '[ \t]+basedir' SPACE* '=' SPACE*
+                        PATH            {{ v = ("basedir", PATH) }}
+                        SPACE* EOL      {{ return v }}
 
-       rule isource:	'[ \t]+source' SPACE* '=' SPACE*
-                    	PATH 	        {{ v = ("source", PATH) }} 
-			SPACE* EOL      {{ return v }} 
+       rule isource:    '[ \t]+source' SPACE* '=' SPACE*
+                        PATH            {{ v = ("source", PATH) }}
+                        SPACE* EOL      {{ return v }}
 
-       rule iexclude:	'[ \t]+exclude' SPACE* '=' SPACE*
-                    	PATH 		{{ v = ("exclude", PATH) }} 
-			SPACE* EOL 	{{ return v }}
+       rule iexclude:   '[ \t]+exclude' SPACE* '=' SPACE*
+                        PATH            {{ v = ("exclude", PATH) }}
+                        SPACE* EOL      {{ return v }}
 
-       rule icount:	'[ \t]+count' SPACE* '=' SPACE*
-                    	NUM 	      	{{ v = ("count", int(NUM)) }} 
-			SPACE* EOL 	{{ return v }} 
+       rule icount:     '[ \t]+count' SPACE* '=' SPACE*
+                        NUM             {{ v = ("count", int(NUM)) }}
+                        SPACE* EOL      {{ return v }}
 
-       rule config:	{{ v, plan = init_plan() }} 
-       	    		( empty 
-       	    		| count	{{ v[count[0]] = count[1] }}
-			| basedir {{ v[basedir[0]] = basedir[1] }}
-			| recipe {{ plan.append(vmerge(v, recipe)) }} 
-			)+ END {{ return plan }}
+       rule config:     {{ v, plan = init_plan() }}
+                                ( empty
+                                | count         {{ v[count[0]] = count[1] }}
+                        | basedir {{ v[basedir[0]] = basedir[1] }}
+                        | recipe {{ plan.append(vmerge(v, recipe)) }}
+                        )+ END {{ return plan }}
                         | END {{ return plan }}
 %%
 ###########################################################################
@@ -112,7 +112,7 @@ parser config:
 # report error
 #
 def backup_error(s):
-    print >> sys.stderr, "error: %s" % s
+    print("error: %s" % s, file=sys.stderr)
     sys.exit(1)
 
 #
@@ -124,7 +124,7 @@ def callcommand(args):
         return r
     except OSError as data:
          backup_error("calling 'ssbackup' failed with: %s", data[1])
-        
+
 
 #
 # split source-'url' into type and path
@@ -132,10 +132,10 @@ def callcommand(args):
 def split_url(url):
     g = re.match("([a-zA-Z]+)://(.+)", url)
     if not g:
-        print >> sys.stderr, "error: %s is not a valid source" % url
+        print("error: %s is not a valid source" % url, file=sys.stderr)
     (type, path) = g.groups()
     if type != "file" and type != "nfs":
-        print >> sys.stderr, "error: %s is not a valid type" % type
+        print("error: %s is not a valid type" % type, file=sys.stderr)
     return ((type, path))
 
 ###########################################################################
@@ -172,7 +172,7 @@ if len(args) == 1:
             backup_error("Parsing config-file '%s' failed" % config_file)
         elif plan == []:
             backup_error("config-file '%s' is empty" % config_file)
-    
+
         for i in plan:
             if not i["source"]:
                 backup_error("source is mandatory for an instance!")
@@ -194,12 +194,11 @@ if len(args) == 1:
             command.append(i["name"])
 
             if options.plan:
-                print command[0]
+                print(command[0])
                 for j in command[1:]:
-                    print "    %s" % j
-                print
+                    print("    %s" % j)
+                print()
             else:
                 callcommand(command)
 else:
     optparse.error("wrong number of arguments");
-

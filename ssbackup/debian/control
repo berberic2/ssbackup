@@ -2,11 +2,11 @@ Source: ssbackup
 Section: unknown
 Priority: extra
 Maintainer: M G Berberich <berberic@invalid>
-Build-Depends: debhelper (>= 5), yapps2
+Build-Depends: debhelper (>= 5), python3-yapps
 Standards-Version: 3.7.2
 
 Package: ssbackup
 Architecture: all
-Depends: python-minimal, yapps2-runtime, ${shlibs:Depends}, ${misc:Depends}
+Depends: python3-minimal, python3-yapps, ${misc:Depends}
 Description: automated snapshot-style backups
  

@@ -1,3 +1,9 @@
+ssbackup (2.1-1) unstable; urgency=medium
+
+  * Update Python3
+
+ -- M G Berberich <debian@oss.m-berberich.de>  Fri, 04 Dec 2020 20:20:32 +0100
+
 ssbackup (1.1-1) unstable; urgency=low
 
   * changed exceptions for python 2.6 up

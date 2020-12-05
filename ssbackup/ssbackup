@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # ssbackup -  a tool for making snapshot-style backups using rsync
 #
@@ -20,15 +20,20 @@
 # 02110-1301 USA.
 #
 
-import sys, os, subprocess, tempfile
-import optparse, re
+import sys
+import os
+import subprocess
+import tempfile
+import optparse
+import re
 
 ###########################################################################
 #
 # backup-routines
 #
 
-class backup_error(Exception): pass
+class BackupError(Exception):
+    pass
 
 #
 # call a command and raise a backup-exception if it fails
@@ -38,7 +43,7 @@ def callcommand(args):
         r = subprocess.call(args)
         return r
     except OSError as data:
-        raise backup_error("call", (args[0], data[1]))
+        raise BackupError("call", (args[0], data[1]))
 
 #
 #
@@ -47,7 +52,7 @@ def rename(a, b):
     try:
         os.rename(a, b)
     except OSError as data:
-        raise backup_error("mv", (a, b, data[1]))
+        raise BackupError("mv", (a, b, data[1]))
 
 #
 # do rsync-logic
@@ -56,36 +61,40 @@ def do_backup(source, name, count, exclude, verbose):
     # do the rsync, make hardlinktree if possible
     if exclude:
         commandstr = ["/usr/bin/rsync",  "--archive", "--acls",
-                      "--exclude-from=%s" % exclude,
-                      "--link-dest=../%s.0/" % name, "%s/" % source, name]
+                      "--exclude-from={:s}".format(exclude),
+                      "--link-dest=../{:s}.0/".format(name),
+                      "{:s}/".format(source), name]
     else:
         commandstr = ["/usr/bin/rsync",  "--archive", "--acls",
-                      "--link-dest=../%s.0/" % name, "%s/" % source, name]
+                      "--link-dest=../{:s}.0/".format(name),
+                      "{:s}/".format(source), name]
 
     r = callcommand(commandstr)
 
     #  0: O.K.
     # 24: Partial transfer due to vanished source files
     if r not in (0, 24):
-        raise backup_error("rsync", r)
+        raise BackupError("rsync", r)
 
     # remove oldest version
-    if os.path.exists("%s.%d" % (name, count)):
-        r = callcommand(["/bin/rm",  "--recursive", "--force",
-                         "%s.%d" % (name, count)])
+    name_old = "{:s}.{:d}".format(name, count)
+    if os.path.exists(name_old):
+        r = callcommand(["/bin/rm",  "--recursive", "--force", name_old])
         if r != 0:
-            raise backup_error("rm", ("%s.%d" % (name, count), r))
+            raise BackupError("rm", (name_old, r))
 
     # shift old versions
     for i in range(count - 1, -1, -1):
-        if os.path.exists("%s.%d" % (name, i)):
-            rename("%s.%d" % (name, i), "%s.%d" % (name, i+1))
+        name_i = "{:s}.{:d}".format(name, i)
+        if os.path.exists(name_i):
+            name_i1 = "{:s}.{:d}".format(name, i+1)
+            rename(name_i, name_i1)
 
     # rename new backup to .0
-    rename(name, "%s.0" % name)
+    rename(name, "{:s}.0".format(name))
 
     # touch directory to have a timestamp
-    os.utime("%s.0" % name, None)
+    os.utime("{:s}.0".format(name), None)
 
 #
 # split source-'url' into type and path
@@ -93,11 +102,11 @@ def do_backup(source, name, count, exclude, verbose):
 def split_url(url):
     g = re.match("([a-zA-Z]+)://(.+)", url)
     if not g:
-        raise backup_error("noturl", url)
+        raise BackupError("noturl", url)
     (type, path) = g.groups()
-    if type != "file" and type != "nfs":
-        raise backup_error("wrongtype", type)
-    return ((type, path))
+    if type not in ("file", "nfs"):
+        raise BackupError("wrongtype", type)
+    return (type, path)
 
 #
 # do the backup
@@ -105,13 +114,14 @@ def split_url(url):
 def backup(source, name, dir, count, exclude, checkonly, verbose):
     (type, path) = split_url(source)
     if verbose:
-        print "backup: type=%s, path=%s, name=%s, dir=%s, count=%d" % \
-        (type, path, name, dir, count)
+        print("backup: type={:s}, path={:s}, "
+              "name={:s}, dir={:s}, count={:d}".format(
+                  type, path, name, dir, count))
 
     try:
         os.chdir(dir)
     except OSError as data:
-        raise backup_error("nodir", (dir, data[1]))
+        raise BackupError("nodir", (dir, data[1]))
 
     if checkonly:
         print_plan(source, name, dir, count, exclude)
@@ -119,25 +129,27 @@ def backup(source, name, dir, count, exclude, checkonly, verbose):
 
     if type == "file":
         if path[0] != '/':
-            raise backup_error("noabspath", path)
+            raise BackupError("noabspath", path)
         do_backup(path, name, count, exclude, verbose)
     elif type == "nfs":
-        mountpoint = tempfile.mkdtemp("","%s/ssbackup-mount-%s-" % (dir, name))
+        mountpoint = tempfile.mkdtemp(
+            "",
+            "{:s}/ssbackup-mount-{:s}-".format(dir, name))
 
         r = callcommand(["/bin/mount", "-t", "nfs", "-o", "ro",
                          path, mountpoint])
         if r != 0:
-            raise backup_error("mount", path)
+            raise BackupError("mount", path)
 
         try:
             do_backup(mountpoint, name, count, exclude, verbose)
         finally:
             r = callcommand(["/bin/umount",  mountpoint])
             if r != 0:
-                raise backup_error("umount", mountpoint)
+                raise BackupError("umount", mountpoint)
             os.rmdir(mountpoint)
     else:
-        raise backup_error("type", source)
+        raise BackupError("type", source)
 
 ###########################################################################
 #
@@ -148,7 +160,7 @@ def backup(source, name, dir, count, exclude, checkonly, verbose):
 # report error
 #
 def print_error(s):
-    print >> sys.stderr, "ssbackup error: %s" % s
+    print("ssbackup error: {:s}".format(s), file=sys.stderr)
     sys.exit(1)
 
 #
@@ -158,7 +170,7 @@ def call_backup(source, name, dir, count, exclude, checkonly, verbose):
     try:
         backup(source, name, dir, count, exclude, checkonly, verbose)
 
-    except backup_error as data:
+    except BackupError as data:
         if data[0] == "mount":
             print_error("mount of %s failed" % data[1])
         elif data[0] == "umount":
@@ -191,12 +203,11 @@ def call_backup(source, name, dir, count, exclude, checkonly, verbose):
 # print a backup-plan-description
 #
 def print_plan(source, dest, dir, count, exclude):
-    type, path = split_url(source)
-    print "backing up", source
-    print "    to %s/%s.*" % (dir, dest)
+    print("backing up", source)
+    print("    to {:s}/{:s}.*".format(dir, dest))
     if exclude:
-        print "    using exclude-file %s" % exclude
-    print "    holding %d versions" % count
+        print("    using exclude-file {:s}".format(exclude))
+    print("    holding {:d} versions".format(count))
 
 ###########################################################################
 #
@@ -238,4 +249,4 @@ if len(args) == 2:
     call_backup(args[0], args[1], options.basedir, options.count,
                 options.exclude, options.checkonly, options.verbose)
 else:
-    optparse.error("wrong number of arguments");
+    optparse.error("wrong number of arguments")

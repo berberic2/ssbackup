@@ -8,7 +8,7 @@ all: ssbackup-batch
 doc:  ssbackup.8.html ssbackup-batch.8.html
 
 ssbackup-batch: ssbackup-batch.g
-	yapps $^ $@
+	yapps2 $^ $@
 	chmod +x $@
 
 install: ssbackup-batch
